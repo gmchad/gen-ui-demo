@@ -3,7 +3,8 @@ import { runOpenAICompletion } from "@/lib/utils/index"
 import { createAI, createStreamableUI, getMutableAIState } from "ai/rsc";
 import { z } from "zod";
 import { getWeather } from "@/lib/utils/index";
-import { Weather } from "@/components/ui/weather";
+import { Weather } from "@/components/weather";
+import { IconAI } from "@/components/ui/icons";
  
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
@@ -55,7 +56,16 @@ async function submitUserMessage(content: string) {
 	});
  
 	completion.onTextContent((content: string, isFinal: boolean) => {
-		uiStream.update(<div>{content}</div>);
+		uiStream.update(
+			<div className="group relative flex items-start">
+				<div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-md border shadow-sm bg-background">
+					<IconAI />
+				</div>
+				<div className="ml-4 flex-1 space-y-2 overflow-hidden px-1">
+					{content}
+				</div>
+			</div>
+		);
  
 		if (isFinal) {
 			uiStream.done();
