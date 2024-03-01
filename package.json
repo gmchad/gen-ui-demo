@@ -6,10 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prettier": "prettier --write --ignore-unknown ."
   },
   "dependencies": {
-    "ai": "^3.0.0",
+    "ai": "^3.0.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.343.0",
@@ -28,6 +29,8 @@
     "eslint": "^8",
     "eslint-config-next": "14.1.1-canary.81",
     "postcss": "^8",
+    "prettier": "^3.2.5",
+    "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }

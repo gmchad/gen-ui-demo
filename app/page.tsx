@@ -1,10 +1,10 @@
-"use client"
- 
-import { useState } from 'react';
+"use client";
+
+import { useState } from "react";
 import { useUIState, useActions } from "ai/rsc";
-import { type AI } from './action';
-import { Input } from "@/components/ui/input"
-import { IconUser } from "@/components/ui/icons"
+import { type AI } from "./action";
+import { Input } from "@/components/ui/input";
+import { IconUser } from "@/components/ui/icons";
 
 export function UserMessage({ children }: { children: React.ReactNode }) {
   return (
@@ -18,70 +18,67 @@ export function UserMessage({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
- 
+
 export default function Page() {
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useUIState<typeof AI>();
   const { submitUserMessage } = useActions();
- 
+
   return (
-    <div className='flex flex-col items-center justify-center p-4'>
-      <div className='w-full max-w-md p-4 border border-gray-200 rounded-lg shadow-md space-y-4'>
-      {
-        // View messages in UI state
-        messages.map((message) => (
-          <div key={message.id}>
-            {message.display}
-          </div>
-        ))
-      }
- 
-      <form
-        onSubmit={async (e: any) => {
-          e.preventDefault();
+    <div className="flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md p-4 border border-gray-200 rounded-lg shadow-md space-y-4">
+        {
+          // View messages in UI state
+          messages.map((message) => (
+            <div key={message.id}>{message.display}</div>
+          ))
+        }
 
-          // Blur focus on mobile
-          if (window.innerWidth < 600) {
-            e.target['message']?.blur();
-          }
+        <form
+          onSubmit={async (e: any) => {
+            e.preventDefault();
 
-          const value = inputValue.trim();
-          setInputValue('');
-          if (!value) return;
+            // Blur focus on mobile
+            if (window.innerWidth < 600) {
+              e.target["message"]?.blur();
+            }
 
-          // Add user message UI
-          setMessages(currentMessages => [
-            ...currentMessages,
-            {
-              id: Date.now(),
-              display: <UserMessage>{value}</UserMessage>,
-            },
-          ]);
+            const value = inputValue.trim();
+            setInputValue("");
+            if (!value) return;
 
-          try {
-            // Submit and get response message
-            const responseMessage = await submitUserMessage(value);
-            setMessages(currentMessages => [
+            // Add user message UI
+            setMessages((currentMessages) => [
               ...currentMessages,
-              responseMessage,
+              {
+                id: Date.now(),
+                display: <UserMessage>{value}</UserMessage>,
+              },
             ]);
-          } catch (error) {
-            console.error(error);
-          }
-        }}
-      >
- 
-      <div className='mt-5'>
-      <Input
-        placeholder="Send a message..."
-        value={inputValue}
-        onChange={(event) => {
-          setInputValue(event.target.value)
-        }}
-      />
+
+            try {
+              // Submit and get response message
+              const responseMessage = await submitUserMessage(value);
+              setMessages((currentMessages) => [
+                ...currentMessages,
+                responseMessage,
+              ]);
+            } catch (error) {
+              console.error(error);
+            }
+          }}
+        >
+          <div className="mt-5">
+            <Input
+              placeholder="Send a message..."
+              value={inputValue}
+              onChange={(event) => {
+                setInputValue(event.target.value);
+              }}
+            />
+          </div>
+        </form>
       </div>
-    </form>
     </div>
-  </div>
-  )
+  );
 }

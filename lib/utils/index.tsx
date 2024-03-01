@@ -1,106 +1,106 @@
-import { ToolDefinition } from '@/lib/utils/tool-definition';
-import { OpenAIStream } from 'ai';
-import type OpenAI from 'openai';
-import zodToJsonSchema from 'zod-to-json-schema';
+import { ToolDefinition } from "@/lib/utils/tool-definition";
+import { OpenAIStream } from "ai";
+import type OpenAI from "openai";
+import zodToJsonSchema from "zod-to-json-schema";
 
 export async function getWeather(location: string, unit: string) {
-	// Dummy data for demonstration
-	const weatherData: any = {
-		'New York': { temperature: 25, description: 'Sunny' },
-		'London': { temperature: 15, description: 'Cloudy' },
-		'Tokyo': { temperature: 20, description: 'Partly cloudy' },
-	};
+  // Dummy data for demonstration
+  const weatherData: any = {
+    "San Francisco": { temperature: 13, description: "Rainy" },
+    "New York": { temperature: 25, description: "Sunny" },
+    London: { temperature: 15, description: "Cloudy" },
+    Tokyo: { temperature: 20, description: "Cloudy" },
+  };
 
-	// Default to 'New York' if the location is not in the dummy data
-	const weather = weatherData[location] || weatherData['New York'];
+  // Default to 'San Francisco' if the location is not in the dummy data
+  const weather = weatherData[location] || weatherData["San Francisco"];
 
-	// Convert temperature to Fahrenheit if unit is 'F'
-	if (unit === 'F') {
-		weather.temperature = weather.temperature * 9/5 + 32;
-	}
+  // Convert temperature to Fahrenheit if unit is 'F'
+  if (unit === "F") {
+    weather.temperature = (weather.temperature * 9) / 5 + 32;
+  }
 
-	return {
-		temperature: weather.temperature,
-		description: weather.description,
-	};
+  return {
+    temperature: weather.temperature,
+    description: weather.description,
+  };
 }
 
 const consumeStream = async (stream: ReadableStream) => {
-	const reader = stream.getReader();
-	while (true) {
-		const { done } = await reader.read();
-		if (done) break;
-	}
+  const reader = stream.getReader();
+  while (true) {
+    const { done } = await reader.read();
+    if (done) break;
+  }
 };
 
 export function runOpenAICompletion<
-	T extends Omit<
-		Parameters<typeof OpenAI.prototype.chat.completions.create>[0],
-		'functions'
-	> & {
-		functions: ToolDefinition<any, any>[];
-	},
+  T extends Omit<
+    Parameters<typeof OpenAI.prototype.chat.completions.create>[0],
+    "functions"
+  > & {
+    functions: ToolDefinition<any, any>[];
+  },
 >(openai: OpenAI, params: T) {
-	let text = '';
-	let hasFunction = false;
+  let text = "";
+  let hasFunction = false;
 
-	type FunctionNames = T['functions'] extends Array<any>
-		? T['functions'][number]['name']
-		: never;
+  type FunctionNames =
+    T["functions"] extends Array<any> ? T["functions"][number]["name"] : never;
 
-	let onTextContent: (text: string, isFinal: boolean) => void = () => {};
+  let onTextContent: (text: string, isFinal: boolean) => void = () => {};
 
-	let onFunctionCall: Record<string, (args: Record<string, any>) => void> = {};
+  let onFunctionCall: Record<string, (args: Record<string, any>) => void> = {};
 
-	const { functions, ...rest } = params;
+  const { functions, ...rest } = params;
 
-	(async () => {
-		consumeStream(
-			OpenAIStream(
-				(await openai.chat.completions.create({
-					...rest,
-					stream: true,
-					functions: functions.map(fn => ({
-						name: fn.name,
-						description: fn.description,
-						parameters: zodToJsonSchema(fn.parameters) as Record<
-							string,
-							unknown
-						>,
-					})),
-				})) as any,
-				{
-					async experimental_onFunctionCall(functionCallPayload) {
-						hasFunction = true;
-						onFunctionCall[
-							functionCallPayload.name as keyof typeof onFunctionCall
-						]?.(functionCallPayload.arguments as Record<string, any>);
-					},
-					onToken(token) {
-						text += token;
-						if (text.startsWith('{')) return;
-						onTextContent(text, false);
-					},
-					onFinal() {
-						if (hasFunction) return;
-						onTextContent(text, true);
-					},
-				},
-			),
-		);
-	})();
+  (async () => {
+    consumeStream(
+      OpenAIStream(
+        (await openai.chat.completions.create({
+          ...rest,
+          stream: true,
+          functions: functions.map((fn) => ({
+            name: fn.name,
+            description: fn.description,
+            parameters: zodToJsonSchema(fn.parameters) as Record<
+              string,
+              unknown
+            >,
+          })),
+        })) as any,
+        {
+          async experimental_onFunctionCall(functionCallPayload) {
+            hasFunction = true;
+            onFunctionCall[
+              functionCallPayload.name as keyof typeof onFunctionCall
+            ]?.(functionCallPayload.arguments as Record<string, any>);
+          },
+          onToken(token) {
+            text += token;
+            if (text.startsWith("{")) return;
+            onTextContent(text, false);
+          },
+          onFinal() {
+            if (hasFunction) return;
+            onTextContent(text, true);
+          },
+        },
+      ),
+    );
+  })();
 
-	return {
-		onTextContent: (
-			callback: (text: string, isFinal: boolean) => void | Promise<void>,
-		) => {
-			onTextContent = callback;
-		},
-		onFunctionCall: (
-			name: FunctionNames,
-			callback: (args: any) => void | Promise<void>,
-		) => {
-			onFunctionCall[name] = callback;
-		},
-	};
+  return {
+    onTextContent: (
+      callback: (text: string, isFinal: boolean) => void | Promise<void>,
+    ) => {
+      onTextContent = callback;
+    },
+    onFunctionCall: (
+      name: FunctionNames,
+      callback: (args: any) => void | Promise<void>,
+    ) => {
+      onFunctionCall[name] = callback;
+    },
+  };
 }
